@@ -1,0 +1,84 @@
+
+# IoT Security Rails for NeMo-Guardrails
+# ========================================
+# This file defines Colang flows for detecting and blocking IoT-related
+# attack patterns including MQTT abuse, ICS targeting, firmware exploitation,
+# and smart device credential theft.
+#
+# Usage: Include in your rails config.yml under rails.input/output sections.
+
+flow iot command injection detection
+  """
+  Detects prompts attempting to inject commands into IoT devices via
+  MQTT, CoAP, or other embedded device communication protocols.
+  """
+  $is_threat = await IoTCommandInjectionAction
+
+  if $is_threat
+    if $system.config.enable_rails_exceptions
+      send IoTCommandInjectionRailException(message="IoT command injection attempt detected. This request has been blocked to protect connected device infrastructure.")
+    else
+      bot say "I'm unable to assist with that request as it involves potentially harmful interactions with IoT device protocols."
+    abort
+
+
+flow iot credential leak detection
+  """
+  Prevents LLM responses from generating or revealing IoT platform
+  credentials, MQTT broker passwords, RTSP stream credentials, or
+  hardcoded device secrets.
+  """
+  $is_leak = await IoTCredentialLeakAction
+
+  if $is_leak
+    if $system.config.enable_rails_exceptions
+      send IoTCredentialLeakRailException(message="IoT credential exposure risk detected in this request or response.")
+    else
+      bot say "I cannot provide or process IoT device credentials. Please use a secure secrets management system for sensitive device tokens."
+    abort
+
+
+flow ics attack detection
+  """
+  Detects and blocks prompts targeting industrial control systems (PLC,
+  SCADA, HMI, DCS), industrial protocols (Modbus, DNP3, PROFINET), or
+  safety-critical systems. Treated as CRITICAL severity.
+  """
+  $is_ics_threat = await ICSAttackDetectionAction
+
+  if $is_ics_threat
+    if $system.config.enable_rails_exceptions
+      send ICSAttackRailException(message="CRITICAL: Industrial control system attack attempt detected. This request has been blocked.")
+    else
+      bot say "I'm unable to assist with requests targeting industrial control systems or critical infrastructure. This activity is monitored and may be reported."
+    abort
+
+
+flow iot firmware exploit detection
+  """
+  Detects prompts seeking guidance on IoT firmware extraction,
+  bootloader bypass, or secure boot circumvention.
+  """
+  $is_firmware_threat = await IoTFirmwareExploitAction
+
+  if $is_firmware_threat
+    if $system.config.enable_rails_exceptions
+      send IoTFirmwareExploitRailException(message="IoT firmware exploitation pattern detected. Request blocked.")
+    else
+      bot say "I cannot provide guidance on unauthorized firmware extraction or bootloader manipulation for IoT devices."
+    abort
+
+
+flow smart device exploit detection
+  """
+  Detects prompts targeting smart home devices: smart locks, IP cameras,
+  voice assistants, or smart lighting systems.
+  """
+  $is_smart_home_threat = await SmartDeviceExploitAction
+
+  if $is_smart_home_threat
+    if $system.config.enable_rails_exceptions
+      send SmartDeviceExploitRailException(message="Smart device exploitation pattern detected. Request blocked.")
+    else
+      bot say "I'm unable to assist with requests that appear to target smart home devices or their security controls."
+    abort
